@@ -1,0 +1,82 @@
+<p id="notice"><%= notice %></p>
+
+<h1>Listing Posts</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Url</th>
+      <th colspan="3"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @posts.each do |post| %>
+      <tr>
+        <td><%= post.url %></td>
+        <td><%= link_to 'Show', post %></td>
+        <td><%= link_to 'Edit', edit_post_path(post) %></td>
+        <td><%= link_to 'Destroy', post, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Post', new_post_path %>
+
+
+<input id="fileupload" type="file" name="file" multiple>
+
+<div id="progress" class="progress">
+  <div class="progress-bar progress-bar-success"></div>
+</div>
+
+<div id="files" class="files">
+</div>
+
+<% form = s3_upload_form(nil, "#{SecureRandom.hex}/") %>
+<script>
+  $(function () {
+      'use strict';
+      // Change this to the location of your server-side upload handler:
+      var url = '<%= form[:'action'] %>';
+      $('#fileupload').fileupload({
+          url: url,
+          add: function (event, data) {
+            console.log('add');
+            console.log(data);
+            
+            data.formData = {
+              'acl':    '<%= form[:'acl'] %>',
+              'key':    '<%= form[:'prefix'] %>'+data.files[0].name,
+              'policy': '<%= form[:'policy'] %>',
+
+              'x-amz-algorithm':  '<%= form[:'x-amz-algorithm'] %>',
+              'x-amz-credential': '<%= form[:'x-amz-credential'] %>',
+              'x-amz-date':       '<%= form[:'x-amz-date'] %>',
+              'x-amz-signature':  '<%= form[:'x-amz-signature'] %>',
+
+              'success_action_status': '<%= form[:'success_action_status'].to_i %>'
+            };
+            data.submit();
+          },
+          done: function (e, data) {
+            console.log('done');
+            console.log(data);
+              $.each(data.files, function (index, file) {
+                  $('<p/>').text(file.name).appendTo('#files');
+              });
+          },
+          progressall: function (e, data) {
+              var progress = parseInt(data.loaded / data.total * 100, 10);
+              $('#progress .progress-bar').css(
+                  'width',
+                  progress + '%'
+              );
+          }
+      }).prop('disabled', !$.support.fileInput)
+          .parent().addClass($.support.fileInput ? undefined : 'disabled');
+  });
+</script>
